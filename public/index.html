@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Sensor IoT</title>
+    
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 40px; 
+            background-color: #f4f7f6;
+        }
+        h2 {
+            color: #333;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            max-width: 800px;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #007bff; 
+            color: white;
+        }
+        /* Bikin baris ganjil-genap beda warna */
+        tbody tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Data Sensor IoT Terbaru</h2>
+    <button id="refreshButton">Ambil Data Terbaru</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Suhu (°C)</th>
+                <th>Kelembapan (%)</th>
+                <th>Kecerahan (Lux)</th>
+                <th>Waktu</th>
+            </tr>
+        </thead>
+        <tbody id="data-container">
+            <tr>
+                <td colspan="4">Memuat data...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        /* ===================================
+           INTI SOAL 2a (PARSING DATA)
+           =================================== */
+        
+        // Alamat API Backend yang sudah kita buat
+        const apiUrl = '/data-terbaru';
+
+        // Ambil elemen HTML tempat kita akan nampilin data
+        const dataContainer = document.getElementById('data-container');
+        const refreshButton = document.getElementById('refreshButton');
+
+        // Bikin fungsi untuk ambil dan tampilkan data
+        // Kita pakai 'async/await' biar kodenya gampang dibaca
+        async function fetchData() {
+            
+            // Tampilkan "Memuat..." setiap kali data diambil
+            dataContainer.innerHTML = '<tr><td colspan="4">Memuat data...</td></tr>';
+
+            try {
+                // 1. Ambil data dari API Backend
+                const response = await fetch(apiUrl);
+
+                // 2. INI DIA PROSES PARSING (Inti Soal 2a)
+                //    Mengubah balasan (response) yang formatnya teks JSON
+                //    menjadi objek/array JavaScript yang bisa dipakai.
+                const dataSensor = await response.json();
+
+                // Cek kalau datanya kosong
+                if (dataSensor.length === 0) {
+                    dataContainer.innerHTML = '<tr><td colspan="4">Data masih kosong.</td></tr>';
+                    return; // Stop eksekusi
+                }
+
+                // 3. Bersihkan tabel (buang tulisan "Memuat...")
+                dataContainer.innerHTML = '';
+
+                // 4. Loop/ulangi untuk setiap data di dalam array 'dataSensor'
+                dataSensor.forEach(sensor => {
+                    // Buat baris tabel (HTML string) baru
+                    // 'new Date(sensor.timestamp).toLocaleString("id-ID")' 
+                    // dipakai untuk format tanggal biar gampang dibaca
+                    const barisHtml = `
+                        <tr>
+                            <td>${sensor.suhu}</td>
+                            <td>${sensor.humidity}</td>
+                            <td>${sensor.lux}</td>
+                            <td>${new Date(sensor.timestamp).toLocaleString("id-ID")}</td>
+                        </tr>
+                    `;
+
+                    // 5. Masukkan baris baru itu ke dalam tabel
+                    dataContainer.innerHTML += barisHtml;
+                });
+
+            } catch (error) {
+                // Kalau GAGAL (misal server backend mati)
+                console.error('Error:', error);
+                dataContainer.innerHTML = `<tr><td colspan="4" style="color: red;">Gagal memuat data. Pastikan server backend berjalan.</td></tr>`;
+            }
+        }
+
+        // --- Event Listener ---
+
+        // 1. Panggil fungsi fetchData() saat halaman pertama kali dibuka
+        document.addEventListener('DOMContentLoaded', fetchData);
+
+        // 2. Panggil fungsi fetchData() setiap kali tombol "Refresh" diklik
+        refreshButton.addEventListener('click', fetchData);
+
+    </script>
+
+</body>
+</html>
